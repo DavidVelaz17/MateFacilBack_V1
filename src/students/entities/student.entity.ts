@@ -1,11 +1,4 @@
-import {
-  Entity,
-  PrimaryGeneratedColumn,
-  Column,
-  ManyToMany,
-  JoinTable,
-  OneToMany,
-} from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToMany, JoinTable, OneToMany } from 'typeorm';
 import { Grupo } from '../../groups/entities/group.entity';
 //import { Intento } from '../../attempts/entities/attempt.entity';
 
@@ -27,14 +20,8 @@ export class Discente {
   @ManyToMany(() => Grupo, (grupo) => grupo.discentes)
   @JoinTable({
     name: 'Discente_Grupo',
-    joinColumn: {
-      name: 'Discenteid_discente',
-      referencedColumnName: 'id_discente',
-    },
-    inverseJoinColumn: {
-      name: 'Grupoid_grupo',
-      referencedColumnName: 'id_grupo',
-    },
+    joinColumn: { name: 'Discenteid_discente', referencedColumnName: 'id_discente' },
+    inverseJoinColumn: { name: 'Grupoid_grupo', referencedColumnName: 'id_grupo' }
   })
   grupos: Grupo[];
 
