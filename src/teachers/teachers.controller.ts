@@ -1,6 +1,17 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  UseGuards,
+} from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
 import { TeachersService } from './teachers.service';
 
+@UseGuards(AuthGuard('jwt'))
 @Controller('teachers') // <-- La ruta base será http://localhost:3001/teachers
 export class TeachersController {
   constructor(private readonly teachersService: TeachersService) {}

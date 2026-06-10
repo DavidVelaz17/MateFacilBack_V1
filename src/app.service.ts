@@ -10,8 +10,18 @@ export interface Student {
 @Injectable()
 export class StudentsService {
   private students: Student[] = [
-    { id: 1, nombres: 'Juan', apellidoPaterno: 'Pérez', apellidoMaterno: 'López' },
-    { id: 2, nombres: 'Ana', apellidoPaterno: 'García', apellidoMaterno: 'Méndez' },
+    {
+      id: 1,
+      nombres: 'Juan',
+      apellidoPaterno: 'Pérez',
+      apellidoMaterno: 'López',
+    },
+    {
+      id: 2,
+      nombres: 'Ana',
+      apellidoPaterno: 'García',
+      apellidoMaterno: 'Méndez',
+    },
   ];
 
   findAll() {
