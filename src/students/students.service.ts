@@ -98,7 +98,8 @@ export class StudentsService {
         avgTime: 0,
         attempts: 0,
         topEmotion: 2,
-        difficulty: 1,
+        difficulty: 2,
+        totalStars: 0,
         recentSessions: [],
       };
     }
@@ -112,6 +113,8 @@ export class StudentsService {
       intentos.reduce((acc, curr) => acc + curr.Dificultad, 0) / attemptsCount,
     );
 
+    const totalStars = intentos.reduce((acc, curr) => acc + curr.Monedas, 0);
+
     // Encontrar la Emocion mas frecuente (Moda)
     const emotionCounts = intentos.reduce(
       (acc, curr) => {
@@ -124,11 +127,11 @@ export class StudentsService {
       emotionCounts[Number(a)] > emotionCounts[Number(b)] ? a : b,
     );
 
-    // Obtener los ultimos 3 intentos para el historial
     const recentSessions = intentos.map((i) => ({
       numero: i.Numero_de_intento,
       score: i.Puntos,
       emotion: i.Emocion,
+      Dificultad: i.Dificultad,
       fecha: i.Fecha,
     }));
 
@@ -137,6 +140,7 @@ export class StudentsService {
       attempts: attemptsCount,
       topEmotion: Number(topEmotion),
       difficulty: avgDiff,
+      totalStars: totalStars,
       recentSessions: recentSessions.reverse(),
     };
   }
