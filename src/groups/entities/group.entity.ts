@@ -1,4 +1,11 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, ManyToMany } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  JoinColumn,
+  ManyToMany,
+} from 'typeorm';
 import { Docente } from '../../teachers/entities/teacher.entity';
 import { Discente } from '../../students/entities/student.entity';
 
@@ -17,11 +24,15 @@ export class Grupo {
   Grado: number;
 
   // Relación: Muchos Grupos pertenecen a un Docente (N:1)
-  @ManyToOne(() => Docente, (docente) => docente.grupos)
+  @ManyToOne(() => Docente, (docente) => docente.grupos, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'Docenteid_docente' })
   docente: Docente;
 
   // Relación: Muchos a Muchos con Discente (N:M)
-  @ManyToMany(() => Discente, (discente) => discente.grupos)
+  @ManyToMany(() => Discente, (discente) => discente.grupos, {
+    onDelete: 'CASCADE',
+  })
   discentes: Discente[];
 }

@@ -1,8 +1,21 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  UseGuards,
+  Req,
+} from '@nestjs/common';
 import { GroupService } from './groups.service';
 import { CreateGroupDto } from './dto/create-group.dto';
 import { UpdateGroupDto } from './dto/update-group.dto';
+import { AuthGuard } from '@nestjs/passport';
+import { Grupo } from './entities/group.entity';
 
+@UseGuards(AuthGuard('jwt'))
 @Controller('groups')
 export class GroupsController {
   constructor(private readonly groupsService: GroupService) {}
@@ -13,8 +26,8 @@ export class GroupsController {
   }
 
   @Get()
-  findAll() {
-    return this.groupsService.findAll();
+  findAll(@Req() req: any) {
+    return this.groupsService.findAllByTeacher(req.user.id);
   }
 
   @Get(':id')

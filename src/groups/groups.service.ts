@@ -19,6 +19,14 @@ export class GroupService {
     return this.groupRepository.find();
   }
 
+  findAllByTeacher(id_docente: number) {
+    return this.groupRepository.find({
+      where: {
+        docente: { id_docente: id_docente },
+      },
+    });
+  }
+
   findOne(id_grupo: number) {
     return this.groupRepository.findOneBy({ id_grupo });
   }

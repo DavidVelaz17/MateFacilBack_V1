@@ -1,6 +1,13 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToMany, JoinTable, OneToMany } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToMany,
+  JoinTable,
+  OneToMany,
+} from 'typeorm';
 import { Grupo } from '../../groups/entities/group.entity';
-//import { Intento } from '../../attempts/entities/attempt.entity';
+import { Intento } from '../../attempts/entities/attempt.entity';
 
 @Entity('discente')
 export class Discente {
@@ -17,15 +24,23 @@ export class Discente {
   Apellido_Materno_Discente: string;
 
   // Relación: Muchos a Muchos con Grupo (Tabla intermedia Discente_Grupo)
-  @ManyToMany(() => Grupo, (grupo) => grupo.discentes)
+  @ManyToMany(() => Grupo, (grupo) => grupo.discentes, {
+    onDelete: 'CASCADE',
+  })
   @JoinTable({
     name: 'Discente_Grupo',
-    joinColumn: { name: 'Discenteid_discente', referencedColumnName: 'id_discente' },
-    inverseJoinColumn: { name: 'Grupoid_grupo', referencedColumnName: 'id_grupo' }
+    joinColumn: {
+      name: 'Discenteid_discente',
+      referencedColumnName: 'id_discente',
+    },
+    inverseJoinColumn: {
+      name: 'Grupoid_grupo',
+      referencedColumnName: 'id_grupo',
+    },
   })
   grupos: Grupo[];
 
-  // Relación: Un Discente tiene muchos Intentos (1:N)
-  //@OneToMany(() => Intento, (intento) => intento.discente)
-  //intentos: Intento[];
+  //Relación: Un Discente tiene muchos Intentos (1:N)
+  @OneToMany(() => Intento, (intento) => intento.discente)
+  intentos: Intento[];
 }

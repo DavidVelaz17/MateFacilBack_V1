@@ -1,6 +1,17 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  UseGuards,
+} from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
 import { TeachersService } from './teachers.service';
 
+@UseGuards(AuthGuard('jwt'))
 @Controller('teachers') // <-- La ruta base será http://localhost:3001/teachers
 export class TeachersController {
   constructor(private readonly teachersService: TeachersService) {}
@@ -23,6 +34,11 @@ export class TeachersController {
   @Patch(':id') // Actualizar (PATCH /teachers/1)
   update(@Param('id') id: string, @Body() updateTeacherDto: any) {
     return this.teachersService.update(+id, updateTeacherDto);
+  }
+
+  @Get(':id/delete-impact') // Impacto de eliminar (GET /teachers/1/delete-impact)
+  getDeleteImpact(@Param('id') id: string) {
+    return this.teachersService.getDeleteImpact(+id);
   }
 
   @Delete(':id') // Eliminar (DELETE /teachers/1)
