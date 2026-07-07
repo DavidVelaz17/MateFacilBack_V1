@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Docente } from './entities/teacher.entity';
+import { Grupo } from '../groups/entities/group.entity';
 import * as bcrypt from 'bcrypt';
 
 @Injectable()
@@ -9,6 +10,8 @@ export class TeachersService {
   constructor(
     @InjectRepository(Docente)
     private teacherRepository: Repository<Docente>,
+    @InjectRepository(Grupo)
+    private groupRepository: Repository<Grupo>,
   ) {}
 
   async create(createTeacherDto: any) {
@@ -44,6 +47,25 @@ export class TeachersService {
     }
     await this.teacherRepository.update(id_docente, updateTeacherDto);
     return this.findOne(id_docente);
+  }
+
+  // Resumen de lo que se perderia al eliminar al docente, para confirmar en el dashboard
+  async getDeleteImpact(id_docente: number) {
+    const groups = await this.groupRepository.find({
+      where: { docente: { id_docente } },
+      relations: { discentes: true },
+    });
+
+    const studentIds = new Set<number>();
+    groups.forEach((grupo) =>
+      grupo.discentes.forEach((discente) => studentIds.add(discente.id_discente)),
+    );
+
+    return {
+      groupsCount: groups.length,
+      groupNames: groups.map((grupo) => grupo.Nombre_Grupo),
+      studentsCount: studentIds.size,
+    };
   }
 
   remove(id: number) {

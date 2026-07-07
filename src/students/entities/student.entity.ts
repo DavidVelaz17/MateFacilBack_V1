@@ -24,7 +24,9 @@ export class Discente {
   Apellido_Materno_Discente: string;
 
   // Relación: Muchos a Muchos con Grupo (Tabla intermedia Discente_Grupo)
-  @ManyToMany(() => Grupo, (grupo) => grupo.discentes)
+  @ManyToMany(() => Grupo, (grupo) => grupo.discentes, {
+    onDelete: 'CASCADE',
+  })
   @JoinTable({
     name: 'Discente_Grupo',
     joinColumn: {

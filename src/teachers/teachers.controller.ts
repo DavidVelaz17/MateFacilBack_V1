@@ -36,6 +36,11 @@ export class TeachersController {
     return this.teachersService.update(+id, updateTeacherDto);
   }
 
+  @Get(':id/delete-impact') // Impacto de eliminar (GET /teachers/1/delete-impact)
+  getDeleteImpact(@Param('id') id: string) {
+    return this.teachersService.getDeleteImpact(+id);
+  }
+
   @Delete(':id') // Eliminar (DELETE /teachers/1)
   remove(@Param('id') id: string) {
     return this.teachersService.remove(+id);
