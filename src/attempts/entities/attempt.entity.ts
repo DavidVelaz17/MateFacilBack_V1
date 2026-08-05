@@ -31,6 +31,10 @@ export class Intento {
   @Column({ name: 'Numero_de_intento' })
   Numero_de_intento: number;
 
+  // Nullable: los intentos guardados antes de este campo no la tienen.
+  @Column({ name: 'Operacion', nullable: true })
+  Operacion: string;
+
   @CreateDateColumn({ name: 'Fecha' })
   Fecha: Date;
 

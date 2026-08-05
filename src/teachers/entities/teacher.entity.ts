@@ -15,7 +15,9 @@ export class Docente {
   @Column({ name: 'Apellido_Materno_Docente', length: 255 })
   Apellido_Materno_Docente: string;
 
-  @Column({ name: 'Password', length: 255 })
+  // select: false evita que el hash se filtre en GET /teachers; se debe
+  // pedir explicitamente (ver TeachersService.findByUsuario) cuando se necesite.
+  @Column({ name: 'Password', length: 255, select: false })
   Password: string;
 
   @Column({ name: 'Usuario', length: 255 })

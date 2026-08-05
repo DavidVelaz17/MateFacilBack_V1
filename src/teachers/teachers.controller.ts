@@ -10,6 +10,8 @@ import {
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { TeachersService } from './teachers.service';
+import { CreateTeacherDto } from './dto/create-teacher.dto';
+import { UpdateTeacherDto } from './dto/update-teacher.dto';
 
 @UseGuards(AuthGuard('jwt'))
 @Controller('teachers') // <-- La ruta base será http://localhost:3001/teachers
@@ -17,7 +19,7 @@ export class TeachersController {
   constructor(private readonly teachersService: TeachersService) {}
 
   @Post() // Crear (POST /teachers)
-  create(@Body() createTeacherDto: any) {
+  create(@Body() createTeacherDto: CreateTeacherDto) {
     return this.teachersService.create(createTeacherDto);
   }
 
@@ -32,7 +34,7 @@ export class TeachersController {
   }
 
   @Patch(':id') // Actualizar (PATCH /teachers/1)
-  update(@Param('id') id: string, @Body() updateTeacherDto: any) {
+  update(@Param('id') id: string, @Body() updateTeacherDto: UpdateTeacherDto) {
     return this.teachersService.update(+id, updateTeacherDto);
   }
 

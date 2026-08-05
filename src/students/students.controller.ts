@@ -7,11 +7,12 @@ import {
   Param,
   Delete,
   UseGuards,
-  Req,
 } from '@nestjs/common';
 import { StudentsService } from './students.service';
-import { Discente } from './entities/student.entity';
 import { AuthGuard } from '@nestjs/passport';
+import { CreateDiscenteDto } from './dto/create-discente.dto';
+import { UpdateDiscenteDto } from './dto/update-discente.dto';
+import { CreateAttemptDto } from '../attempts/dto/create-attempt.dto';
 
 @UseGuards(AuthGuard('jwt'))
 @Controller('discentes') //
@@ -19,17 +20,17 @@ export class StudentsController {
   constructor(private readonly studentsService: StudentsService) {}
 
   @Post() // Crear (POST /discentes)
-  create(@Body() createStudentDto: Discente) {
+  create(@Body() createStudentDto: CreateDiscenteDto) {
     return this.studentsService.create(createStudentDto);
   }
 
-  @Get() // Leer todos (GET /discentes)
-  findAll(@Req() req: any) {
-    return this.studentsService.findAllByTeacher(req.user.id);
+  @Get() // Leer todos (GET /discentes) - sin filtrar por docente, con o sin grupo
+  findAll() {
+    return this.studentsService.findAll();
   }
 
   @Patch(':id')  //Actualizar (PATCH /discentes/1)
-  update(@Param('id') id: string, @Body() updateStudentDto: any) {
+  update(@Param('id') id: string, @Body() updateStudentDto: UpdateDiscenteDto) {
     return this.studentsService.update(+id, updateStudentDto);
   }
 
@@ -40,7 +41,7 @@ export class StudentsController {
 
   // Guardar datos al finalizar partida
   @Post(':id/attempts')
-  saveAttempt(@Param('id') id: string, @Body() attemptData: any) {
+  saveAttempt(@Param('id') id: string, @Body() attemptData: CreateAttemptDto) {
     return this.studentsService.saveAttempt(+id, attemptData);
   }
 

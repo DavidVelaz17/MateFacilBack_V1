@@ -1,6 +1,7 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { TeachersService } from '../teachers/teachers.service';
+import { LoginDto } from './dto/login.dto';
 import * as bcrypt from 'bcrypt';
 
 // Interfaz para garantizar el tipado estricto del usuario validado
@@ -21,11 +22,12 @@ export class AuthService {
 
   // Se especifica el tipo de retorno estricto en lugar de any
   async validateUser(usuario: string, pass: string): Promise<ValidatedUser | null> {
-    // Intercepcion del Super Admin
-    const adminUser = process.env.ADMIN_USERNAME || 'admin';
-    const adminPass = process.env.ADMIN_PASSWORD || 'secreto';
+    // Intercepcion del Super Admin. Sin fallback: si ADMIN_USERNAME/ADMIN_PASSWORD
+    // no estan definidos en el entorno, este acceso simplemente no puede matchear.
+    const adminUser = process.env.ADMIN_USERNAME;
+    const adminPass = process.env.ADMIN_PASSWORD;
 
-    if (usuario === adminUser && pass === adminPass) {
+    if (adminUser && adminPass && usuario === adminUser && pass === adminPass) {
       return {
         id_docente: 10000,
         Usuario: 'admin',
@@ -53,7 +55,7 @@ export class AuthService {
     return null;
   }
 
-  async login(loginDto: { usuario: string; password: string }) {
+  async login(loginDto: LoginDto) {
     const validUser = await this.validateUser(
       loginDto.usuario,
       loginDto.password,

@@ -3,6 +3,9 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Discente } from './entities/student.entity';
 import { Intento } from '../attempts/entities/attempt.entity';
+import { CreateDiscenteDto } from './dto/create-discente.dto';
+import { UpdateDiscenteDto } from './dto/update-discente.dto';
+import { CreateAttemptDto } from '../attempts/dto/create-attempt.dto';
 
 @Injectable()
 export class StudentsService {
@@ -13,25 +16,37 @@ export class StudentsService {
     private intentoRepository: Repository<Intento>,
   ) {}
 
-  create(createStudentDto: any) {
+  create(createStudentDto: CreateDiscenteDto) {
     const newStudent = this.studentRepository.create(createStudentDto);
     return this.studentRepository.save(newStudent);
   }
 
-  findAll() {
-    return this.studentRepository.find({
+  async findAll() {
+    const students = await this.studentRepository.find({
       // Usamos la sintaxis moderna de objetos para obligar a TypeORM a leer la tabla intermedia
       relations: {
         grupos: true,
       },
     });
-  }
-  findAllByTeacher(id_docente: number) {
-    return this.studentRepository.createQueryBuilder('discente')
-      .innerJoinAndSelect('discente.grupos', 'grupo')
-      .innerJoin('grupo.docente', 'docente')
-      .where('docente.id_docente = :id_docente', { id_docente: id_docente })
-      .getMany();
+
+    // Total de estrellas (Monedas) acumuladas por alumno, para mostrarlo en
+    // el listado sin tener que consultar /discentes/:id/stats uno por uno.
+    const starsRaw = await this.intentoRepository
+      .createQueryBuilder('intento')
+      .leftJoin('intento.discente', 'discente')
+      .select('discente.id_discente', 'id_discente')
+      .addSelect('SUM(intento.Monedas)', 'totalStars')
+      .groupBy('discente.id_discente')
+      .getRawMany();
+
+    const starsByStudent = new Map<number, number>(
+      starsRaw.map((row) => [Number(row.id_discente), Number(row.totalStars)]),
+    );
+
+    return students.map((student) => ({
+      ...student,
+      totalStars: starsByStudent.get(student.id_discente) ?? 0,
+    }));
   }
 
   findOne(id_discente: number) {
@@ -43,7 +58,7 @@ export class StudentsService {
     });
   }
 
-  async update(id_discente: number, updateStudentDto: any) {
+  async update(id_discente: number, updateStudentDto: UpdateDiscenteDto) {
     const student = await this.studentRepository.preload({
       id_discente: id_discente,
       ...updateStudentDto,
@@ -56,12 +71,16 @@ export class StudentsService {
     return this.studentRepository.save(student);
   }
 
-  remove(id_discente: number) {
+  async remove(id_discente: number) {
+    const existing = await this.studentRepository.findOneBy({ id_discente });
+    if (!existing) {
+      throw new NotFoundException(`Alumno con ID ${id_discente} no encontrado`);
+    }
     return this.studentRepository.delete(id_discente);
   }
 
   // 1. METODO PARA GUARDAR EL INTENTO
-  async saveAttempt(id_discente: number, attemptData: any) {
+  async saveAttempt(id_discente: number, attemptData: CreateAttemptDto) {
     const student = await this.studentRepository.findOne({
       where: { id_discente },
       relations: { intentos: true },
@@ -132,6 +151,7 @@ export class StudentsService {
       score: i.Puntos,
       emotion: i.Emocion,
       Dificultad: i.Dificultad,
+      operacion: i.Operacion,
       fecha: i.Fecha,
     }));
 

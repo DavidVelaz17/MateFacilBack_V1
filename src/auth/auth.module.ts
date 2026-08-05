@@ -15,7 +15,7 @@ import { TeachersModule } from '../teachers/teachers.module';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
-        secret: configService.get<string>('JWT_SECRET') || 'matefacil',
+        secret: configService.getOrThrow<string>('JWT_SECRET'),
         signOptions: { expiresIn: '4h' },
       }),
     }),
