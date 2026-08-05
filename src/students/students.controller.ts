@@ -7,7 +7,6 @@ import {
   Param,
   Delete,
   UseGuards,
-  Req,
 } from '@nestjs/common';
 import { StudentsService } from './students.service';
 import { AuthGuard } from '@nestjs/passport';
@@ -25,9 +24,9 @@ export class StudentsController {
     return this.studentsService.create(createStudentDto);
   }
 
-  @Get() // Leer todos (GET /discentes)
-  findAll(@Req() req: any) {
-    return this.studentsService.findAllByTeacher(req.user.id);
+  @Get() // Leer todos (GET /discentes) - sin filtrar por docente, con o sin grupo
+  findAll() {
+    return this.studentsService.findAll();
   }
 
   @Patch(':id')  //Actualizar (PATCH /discentes/1)

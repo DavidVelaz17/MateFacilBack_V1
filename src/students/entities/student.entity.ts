@@ -23,6 +23,11 @@ export class Discente {
   @Column({ name: 'Apellido_Materno_Discente', length: 255 })
   Apellido_Materno_Discente: string;
 
+  // Baja logica: un alumno inactivo se oculta de las vistas de los docentes
+  // sin perder su historial de intentos.
+  @Column({ name: 'Activo', default: true })
+  Activo: boolean;
+
   // Relación: Muchos a Muchos con Grupo (Tabla intermedia Discente_Grupo)
   @ManyToMany(() => Grupo, (grupo) => grupo.discentes, {
     onDelete: 'CASCADE',

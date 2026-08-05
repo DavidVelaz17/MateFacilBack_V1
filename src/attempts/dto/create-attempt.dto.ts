@@ -1,4 +1,4 @@
-import { IsInt, Max, Min } from 'class-validator';
+import { IsIn, IsInt, Max, Min } from 'class-validator';
 
 // Rangos tomados de la formula real del frontend (GameScene.tsx:
 // handleDoorCollision/triggerLoss). No es anti-cheat, solo evita que
@@ -27,4 +27,7 @@ export class CreateAttemptDto {
   @Min(0)
   @Max(3)
   Monedas: number;
+
+  @IsIn(['suma', 'resta', 'multiplicacion', 'division'])
+  Operacion: string;
 }

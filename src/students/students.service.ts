@@ -21,20 +21,32 @@ export class StudentsService {
     return this.studentRepository.save(newStudent);
   }
 
-  findAll() {
-    return this.studentRepository.find({
+  async findAll() {
+    const students = await this.studentRepository.find({
       // Usamos la sintaxis moderna de objetos para obligar a TypeORM a leer la tabla intermedia
       relations: {
         grupos: true,
       },
     });
-  }
-  findAllByTeacher(id_docente: number) {
-    return this.studentRepository.createQueryBuilder('discente')
-      .innerJoinAndSelect('discente.grupos', 'grupo')
-      .innerJoin('grupo.docente', 'docente')
-      .where('docente.id_docente = :id_docente', { id_docente: id_docente })
-      .getMany();
+
+    // Total de estrellas (Monedas) acumuladas por alumno, para mostrarlo en
+    // el listado sin tener que consultar /discentes/:id/stats uno por uno.
+    const starsRaw = await this.intentoRepository
+      .createQueryBuilder('intento')
+      .leftJoin('intento.discente', 'discente')
+      .select('discente.id_discente', 'id_discente')
+      .addSelect('SUM(intento.Monedas)', 'totalStars')
+      .groupBy('discente.id_discente')
+      .getRawMany();
+
+    const starsByStudent = new Map<number, number>(
+      starsRaw.map((row) => [Number(row.id_discente), Number(row.totalStars)]),
+    );
+
+    return students.map((student) => ({
+      ...student,
+      totalStars: starsByStudent.get(student.id_discente) ?? 0,
+    }));
   }
 
   findOne(id_discente: number) {
@@ -139,6 +151,7 @@ export class StudentsService {
       score: i.Puntos,
       emotion: i.Emocion,
       Dificultad: i.Dificultad,
+      operacion: i.Operacion,
       fecha: i.Fecha,
     }));
 
