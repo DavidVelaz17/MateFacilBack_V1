@@ -1,23 +1,22 @@
-# Usamos una versión ligera de Node
-FROM node:18-alpine
+# NestJS 11 + TypeORM 0.3 funcionan bien en Node 20 LTS
+FROM node:20-alpine
 
-# Creamos la carpeta de trabajo dentro del contenedor
 WORKDIR /app
 
-# Copiamos los archivos de dependencias primero (para aprovechar la caché)
+# Copiamos los archivos de dependencias primero (para aprovechar la cache)
 COPY package*.json ./
 
-# Instalamos dependencias
-RUN npm install
+# npm ci: instalacion reproducible a partir del lockfile
+RUN npm ci
 
-# Copiamos el resto del código
+# Copiamos el resto del codigo (.dockerignore excluye node_modules, .env, etc.)
 COPY . .
 
-# Compilamos el proyecto (NestJS necesita build)
+# Compilamos el proyecto (genera dist/, incluye las migraciones compiladas)
 RUN npm run build
 
-# Exponemos el puerto (NestJS suele usar el 3000)
-EXPOSE 3000
+# main.ts hace app.listen(3001, ...)
+EXPOSE 3001
 
-# Comando para iniciar en producción
+# Las migraciones corren solas al arrancar (migrationsRun: true en app.module.ts)
 CMD ["npm", "run", "start:prod"]
