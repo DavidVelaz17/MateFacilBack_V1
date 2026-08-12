@@ -1,5 +1,5 @@
 import { PartialType } from '@nestjs/mapped-types';
-import { IsBoolean, IsOptional } from 'class-validator';
+import { IsBoolean, IsInt, IsOptional, Min } from 'class-validator';
 import { CreateDiscenteDto } from './create-discente.dto';
 
 export class UpdateDiscenteDto extends PartialType(CreateDiscenteDto) {
@@ -7,4 +7,15 @@ export class UpdateDiscenteDto extends PartialType(CreateDiscenteDto) {
   @IsOptional()
   @IsBoolean()
   Activo?: boolean;
+
+  // Actualizados desde el juego (MapScene) al avanzar/reiniciar un mundo.
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  NivelMapaTierra?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  NivelMapaAgua?: number;
 }

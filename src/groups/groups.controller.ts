@@ -35,6 +35,12 @@ export class GroupsController {
     return this.groupsService.findOne(+id);
   }
 
+  // Avance del grupo en el tiempo (promedios diarios + serie por alumno)
+  @Get(':id/stats')
+  getStats(@Param('id') id: string) {
+    return this.groupsService.getGroupStats(+id);
+  }
+
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateGroupDto: UpdateGroupDto) {
     return this.groupsService.update(+id, updateGroupDto);

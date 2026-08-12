@@ -79,6 +79,25 @@ export class StudentsService {
     return this.studentRepository.delete(id_discente);
   }
 
+  // Quita al alumno de un grupo puntual sin tocar su registro ni su
+  // historial de intentos: solo modifica la tabla intermedia Discente_Grupo.
+  async removeFromGroup(id_discente: number, id_grupo: number) {
+    const student = await this.studentRepository.findOne({
+      where: { id_discente },
+      relations: { grupos: true },
+    });
+
+    if (!student) {
+      throw new NotFoundException(`Alumno con ID ${id_discente} no encontrado`);
+    }
+
+    student.grupos = (student.grupos || []).filter(
+      (grupo) => grupo.id_grupo !== id_grupo,
+    );
+
+    return this.studentRepository.save(student);
+  }
+
   // 1. METODO PARA GUARDAR EL INTENTO
   async saveAttempt(id_discente: number, attemptData: CreateAttemptDto) {
     const student = await this.studentRepository.findOne({
@@ -109,17 +128,23 @@ export class StudentsService {
 
     if (!student) throw new NotFoundException('Alumno no encontrado');
 
+    const studentName =
+      `${student.Nombre_Discente} ${student.Apellido_Paterno_Discente} ${student.Apellido_Materno_Discente}`.trim();
+
     const intentos = student.intentos;
 
     // Valores por defecto si aun no ha jugado
     if (intentos.length === 0) {
       return {
+        studentName,
         avgTime: 0,
         attempts: 0,
         topEmotion: 2,
         difficulty: 2,
         totalStars: 0,
         recentSessions: [],
+        nivelMapaTierra: student.NivelMapaTierra,
+        nivelMapaAgua: student.NivelMapaAgua,
       };
     }
 
@@ -147,21 +172,28 @@ export class StudentsService {
     );
 
     const recentSessions = intentos.map((i) => ({
+      id: i.id_intento,
       numero: i.Numero_de_intento,
       score: i.Puntos,
       emotion: i.Emocion,
       Dificultad: i.Dificultad,
       operacion: i.Operacion,
       fecha: i.Fecha,
+      desglose: i.Desglose,
+      vidas: i.Vidas,
+      estrellas: i.Monedas,
     }));
 
     return {
+      studentName,
       avgTime: Math.round(avgTime),
       attempts: attemptsCount,
       topEmotion: Number(topEmotion),
       difficulty: avgDiff,
       totalStars: totalStars,
       recentSessions: recentSessions.reverse(),
+      nivelMapaTierra: student.NivelMapaTierra,
+      nivelMapaAgua: student.NivelMapaAgua,
     };
   }
 }

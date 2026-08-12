@@ -28,6 +28,16 @@ export class Discente {
   @Column({ name: 'Activo', default: true })
   Activo: boolean;
 
+  // Progreso del modo historia en cada mundo del mapa (indice de punto
+  // alcanzado, 0 = inicio). Se actualiza desde MapScene via
+  // PATCH /discentes/:id para que el mapa retome donde el alumno se quedo,
+  // en vez de reiniciar siempre en el primer nivel.
+  @Column({ name: 'NivelMapaTierra', type: 'int', default: 0 })
+  NivelMapaTierra: number;
+
+  @Column({ name: 'NivelMapaAgua', type: 'int', default: 0 })
+  NivelMapaAgua: number;
+
   // Relación: Muchos a Muchos con Grupo (Tabla intermedia Discente_Grupo)
   @ManyToMany(() => Grupo, (grupo) => grupo.discentes, {
     onDelete: 'CASCADE',
