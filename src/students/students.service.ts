@@ -6,6 +6,7 @@ import { Intento } from '../attempts/entities/attempt.entity';
 import { CreateDiscenteDto } from './dto/create-discente.dto';
 import { UpdateDiscenteDto } from './dto/update-discente.dto';
 import { CreateAttemptDto } from '../attempts/dto/create-attempt.dto';
+import { AchievementsService } from '../achievements/achievements.service';
 
 @Injectable()
 export class StudentsService {
@@ -14,6 +15,7 @@ export class StudentsService {
     private studentRepository: Repository<Discente>,
     @InjectRepository(Intento)
     private intentoRepository: Repository<Intento>,
+    private achievementsService: AchievementsService,
   ) {}
 
   create(createStudentDto: CreateDiscenteDto) {
@@ -68,7 +70,35 @@ export class StudentsService {
       throw new NotFoundException(`Alumno con ID ${id_discente} no encontrado`);
     }
 
-    return this.studentRepository.save(student);
+    await this.studentRepository.save(student);
+
+    // Si esta actualizacion toco el progreso del mapa (MapScene ->
+    // PATCH /discentes/:id al terminar un nivel), revisamos ahi mismo si
+    // eso acaba de completar "Mundo Terrestre"/"Mundo Acuatico": a
+    // diferencia de los demas logros, estos no dependen de un intento
+    // nuevo sino de este campo, que llega en un PATCH aparte del
+    // POST /attempts que guarda la partida (ver saveAttempt).
+    let logrosNuevos: Awaited<
+      ReturnType<AchievementsService['evaluarYDesbloquear']>
+    > = [];
+
+    if (
+      updateStudentDto.NivelMapaTierra !== undefined ||
+      updateStudentDto.NivelMapaAgua !== undefined
+    ) {
+      const actualizado = await this.studentRepository.findOne({
+        where: { id_discente },
+        relations: { intentos: true },
+      });
+      if (actualizado) {
+        logrosNuevos = await this.achievementsService.evaluarYDesbloquear(
+          actualizado,
+          actualizado.intentos,
+        );
+      }
+    }
+
+    return { ...student, logrosNuevos };
   }
 
   async remove(id_discente: number) {
@@ -116,7 +146,29 @@ export class StudentsService {
       discente: student,
     });
 
-    return this.intentoRepository.save(newAttempt);
+    const savedAttempt = await this.intentoRepository.save(newAttempt);
+
+    // Evaluamos logros y rachas con el historial ya actualizado, para
+    // poder mostrar en el momento (dentro del juego) lo que se acaba de
+    // desbloquear con esta partida.
+    const intentosActualizados = [...student.intentos, savedAttempt];
+    const logrosNuevos = await this.achievementsService.evaluarYDesbloquear(
+      student,
+      intentosActualizados,
+    );
+    const rachaDias = this.achievementsService.calcularRachaDias(
+      intentosActualizados,
+    );
+    const rachaVictorias = this.achievementsService.calcularRachaVictorias(
+      intentosActualizados,
+    );
+
+    return {
+      ...savedAttempt,
+      logrosNuevos,
+      rachaDias,
+      rachaVictorias,
+    };
   }
 
   // 2. METODO PARA CALCULAR ESTADISTICAS
@@ -145,6 +197,11 @@ export class StudentsService {
         recentSessions: [],
         nivelMapaTierra: student.NivelMapaTierra,
         nivelMapaAgua: student.NivelMapaAgua,
+        streaks: { dias: 0, victorias: 0 },
+        logros: await this.achievementsService.getCatalogoParaAlumno(
+          student,
+          [],
+        ),
       };
     }
 
@@ -194,6 +251,14 @@ export class StudentsService {
       recentSessions: recentSessions.reverse(),
       nivelMapaTierra: student.NivelMapaTierra,
       nivelMapaAgua: student.NivelMapaAgua,
+      streaks: {
+        dias: this.achievementsService.calcularRachaDias(intentos),
+        victorias: this.achievementsService.calcularRachaVictorias(intentos),
+      },
+      logros: await this.achievementsService.getCatalogoParaAlumno(
+        student,
+        intentos,
+      ),
     };
   }
 }
