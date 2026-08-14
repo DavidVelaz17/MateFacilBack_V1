@@ -25,14 +25,11 @@ export class StudentsService {
 
   async findAll() {
     const students = await this.studentRepository.find({
-      // Usamos la sintaxis moderna de objetos para obligar a TypeORM a leer la tabla intermedia
       relations: {
         grupos: true,
       },
     });
 
-    // Total de estrellas (Monedas) acumuladas por alumno, para mostrarlo en
-    // el listado sin tener que consultar /discentes/:id/stats uno por uno.
     const starsRaw = await this.intentoRepository
       .createQueryBuilder('intento')
       .leftJoin('intento.discente', 'discente')
@@ -72,12 +69,10 @@ export class StudentsService {
 
     await this.studentRepository.save(student);
 
-    // Si esta actualizacion toco el progreso del mapa (MapScene ->
-    // PATCH /discentes/:id al terminar un nivel), revisamos ahi mismo si
-    // eso acaba de completar "Mundo Terrestre"/"Mundo Acuatico": a
-    // diferencia de los demas logros, estos no dependen de un intento
-    // nuevo sino de este campo, que llega en un PATCH aparte del
-    // POST /attempts que guarda la partida (ver saveAttempt).
+    // A diferencia de los demas logros, "Mundo Terrestre"/"Mundo Acuatico" no
+    // se disparan al guardar un intento (saveAttempt) sino aqui, porque el
+    // progreso de mapa llega en un PATCH /discentes/:id separado del
+    // POST /attempts.
     let logrosNuevos: Awaited<
       ReturnType<AchievementsService['evaluarYDesbloquear']>
     > = [];
@@ -109,8 +104,6 @@ export class StudentsService {
     return this.studentRepository.delete(id_discente);
   }
 
-  // Quita al alumno de un grupo puntual sin tocar su registro ni su
-  // historial de intentos: solo modifica la tabla intermedia Discente_Grupo.
   async removeFromGroup(id_discente: number, id_grupo: number) {
     const student = await this.studentRepository.findOne({
       where: { id_discente },
@@ -128,7 +121,6 @@ export class StudentsService {
     return this.studentRepository.save(student);
   }
 
-  // 1. METODO PARA GUARDAR EL INTENTO
   async saveAttempt(id_discente: number, attemptData: CreateAttemptDto) {
     const student = await this.studentRepository.findOne({
       where: { id_discente },
@@ -137,20 +129,20 @@ export class StudentsService {
 
     if (!student) throw new NotFoundException('Alumno no encontrado');
 
-    // Auto-calculamos que numero de intento es basado en su historial
     const numeroDeIntento = student.intentos.length + 1;
 
+    // TzOffset no es una columna de Intento: se destructura aparte para no
+    // guardarlo en la partida, solo se usa para calcular la racha de dias.
+    const { TzOffset, ...attemptFields } = attemptData;
+
     const newAttempt = this.intentoRepository.create({
-      ...attemptData,
+      ...attemptFields,
       Numero_de_intento: numeroDeIntento,
       discente: student,
     });
 
     const savedAttempt = await this.intentoRepository.save(newAttempt);
 
-    // Evaluamos logros y rachas con el historial ya actualizado, para
-    // poder mostrar en el momento (dentro del juego) lo que se acaba de
-    // desbloquear con esta partida.
     const intentosActualizados = [...student.intentos, savedAttempt];
     const logrosNuevos = await this.achievementsService.evaluarYDesbloquear(
       student,
@@ -158,6 +150,7 @@ export class StudentsService {
     );
     const rachaDias = this.achievementsService.calcularRachaDias(
       intentosActualizados,
+      TzOffset,
     );
     const rachaVictorias = this.achievementsService.calcularRachaVictorias(
       intentosActualizados,
@@ -171,8 +164,7 @@ export class StudentsService {
     };
   }
 
-  // 2. METODO PARA CALCULAR ESTADISTICAS
-  async getStudentStats(id_discente: number) {
+  async getStudentStats(id_discente: number, tzOffsetMinutes = 0) {
     const student = await this.studentRepository.findOne({
       where: { id_discente },
       relations: { intentos: true },
@@ -185,7 +177,6 @@ export class StudentsService {
 
     const intentos = student.intentos;
 
-    // Valores por defecto si aun no ha jugado
     if (intentos.length === 0) {
       return {
         studentName,
@@ -207,7 +198,6 @@ export class StudentsService {
 
     const attemptsCount = intentos.length;
 
-    // Calculo de Promedios
     const avgTime =
       intentos.reduce((acc, curr) => acc + curr.Tiempo, 0) / attemptsCount;
     const avgDiff = Math.round(
@@ -216,7 +206,6 @@ export class StudentsService {
 
     const totalStars = intentos.reduce((acc, curr) => acc + curr.Monedas, 0);
 
-    // Encontrar la Emocion mas frecuente (Moda)
     const emotionCounts = intentos.reduce(
       (acc, curr) => {
         acc[curr.Emocion] = (acc[curr.Emocion] || 0) + 1;
@@ -252,13 +241,135 @@ export class StudentsService {
       nivelMapaTierra: student.NivelMapaTierra,
       nivelMapaAgua: student.NivelMapaAgua,
       streaks: {
-        dias: this.achievementsService.calcularRachaDias(intentos),
+        dias: this.achievementsService.calcularRachaDias(
+          intentos,
+          tzOffsetMinutes,
+        ),
         victorias: this.achievementsService.calcularRachaVictorias(intentos),
       },
       logros: await this.achievementsService.getCatalogoParaAlumno(
         student,
         intentos,
       ),
+    };
+  }
+
+  private modaEmocion(intentos: Intento[]): number | null {
+    if (intentos.length === 0) return null;
+    const counts = intentos.reduce(
+      (acc, i) => {
+        acc[i.Emocion] = (acc[i.Emocion] || 0) + 1;
+        return acc;
+      },
+      {} as Record<number, number>,
+    );
+    const top = Object.keys(counts).reduce((a, b) =>
+      counts[Number(a)] > counts[Number(b)] ? a : b,
+    );
+    return Number(top);
+  }
+
+  // estadoActual (rachas, nivel de mapa, total de logros) describe el
+  // presente y deliberadamente no se filtra por [desde, hasta] como el
+  // resto del reporte.
+  async getStudentReport(
+    id_discente: number,
+    desde: Date,
+    hasta: Date,
+    tzOffsetMinutes = 0,
+  ) {
+    const student = await this.studentRepository.findOne({
+      where: { id_discente },
+      relations: { intentos: true, grupos: true },
+    });
+
+    if (!student) throw new NotFoundException('Alumno no encontrado');
+
+    const studentName =
+      `${student.Nombre_Discente} ${student.Apellido_Paterno_Discente} ${student.Apellido_Materno_Discente}`.trim();
+    const grupos = (student.grupos || []).map(
+      (g) => `${g.Grado}° ${g.Nombre_Grupo} (${g.Año})`,
+    );
+
+    const todosLosIntentos = student.intentos;
+    const intentosPeriodo = todosLosIntentos.filter(
+      (i) => i.Fecha >= desde && i.Fecha <= hasta,
+    );
+    const attemptsCount = intentosPeriodo.length;
+
+    const resumenPeriodo =
+      attemptsCount === 0
+        ? { avgTime: 0, attempts: 0, avgDifficulty: 0, topEmotion: null, totalStars: 0 }
+        : {
+            avgTime: Math.round(
+              intentosPeriodo.reduce((acc, i) => acc + i.Tiempo, 0) / attemptsCount,
+            ),
+            attempts: attemptsCount,
+            avgDifficulty: Math.round(
+              intentosPeriodo.reduce((acc, i) => acc + i.Dificultad, 0) / attemptsCount,
+            ),
+            topEmotion: this.modaEmocion(intentosPeriodo),
+            totalStars: intentosPeriodo.reduce((acc, i) => acc + i.Monedas, 0),
+          };
+
+    const desglosePorOperacion = ['suma', 'resta', 'multiplicacion', 'division']
+      .map((operacion) => {
+        const deEstaOperacion = intentosPeriodo.filter((i) => i.Operacion === operacion);
+        const victorias = deEstaOperacion.filter((i) => i.Puntos > 0).length;
+        return {
+          operacion,
+          intentos: deEstaOperacion.length,
+          victorias,
+          porcentaje:
+            deEstaOperacion.length > 0
+              ? Math.round((victorias / deEstaOperacion.length) * 100)
+              : 0,
+        };
+      })
+      .filter((d) => d.intentos > 0);
+
+    const sesionesPeriodo = [...intentosPeriodo]
+      .sort((a, b) => a.Fecha.getTime() - b.Fecha.getTime())
+      .map((i) => ({
+        id: i.id_intento,
+        fecha: i.Fecha,
+        operacion: i.Operacion,
+        Dificultad: i.Dificultad,
+        score: i.Puntos,
+        estrellas: i.Monedas,
+        vidas: i.Vidas,
+        emotion: i.Emocion,
+      }));
+
+    const logrosCatalogo = await this.achievementsService.getCatalogoParaAlumno(
+      student,
+      todosLosIntentos,
+    );
+    const logrosDesbloqueados = logrosCatalogo.filter((l) => l.desbloqueado);
+    const logrosEnPeriodo = logrosDesbloqueados.filter(
+      (l) => l.fecha && l.fecha >= desde && l.fecha <= hasta,
+    );
+
+    return {
+      studentName,
+      grupos,
+      resumenPeriodo,
+      estadoActual: {
+        streaks: {
+          dias: this.achievementsService.calcularRachaDias(
+            todosLosIntentos,
+            tzOffsetMinutes,
+          ),
+          victorias: this.achievementsService.calcularRachaVictorias(todosLosIntentos),
+        },
+        nivelMapaTierra: student.NivelMapaTierra,
+        nivelMapaAgua: student.NivelMapaAgua,
+        logrosTotales: logrosDesbloqueados.length,
+        logrosCatalogoTotal: logrosCatalogo.length,
+      },
+      logrosEnPeriodo,
+      desglosePorOperacion,
+      sesionesPeriodo,
     };
   }
 }

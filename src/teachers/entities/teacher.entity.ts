@@ -15,15 +15,14 @@ export class Docente {
   @Column({ name: 'Apellido_Materno_Docente', length: 255 })
   Apellido_Materno_Docente: string;
 
-  // select: false evita que el hash se filtre en GET /teachers; se debe
-  // pedir explicitamente (ver TeachersService.findByUsuario) cuando se necesite.
+  // select: false evita que el hash se filtre en GET /teachers; debe
+  // pedirse explicitamente (ver TeachersService.findByUsuario).
   @Column({ name: 'Password', length: 255, select: false })
   Password: string;
 
   @Column({ name: 'Usuario', length: 255 })
   Usuario: string;
 
-  // Relación: Un Docente tiene muchos Grupos (1:N)
   @OneToMany(() => Grupo, (grupo) => grupo.docente)
   grupos: Grupo[];
 }

@@ -23,14 +23,12 @@ export class Grupo {
   @Column({ name: 'Grado' })
   Grado: number;
 
-  // Relación: Muchos Grupos pertenecen a un Docente (N:1)
   @ManyToOne(() => Docente, (docente) => docente.grupos, {
     onDelete: 'CASCADE',
   })
   @JoinColumn({ name: 'Docenteid_docente' })
   docente: Docente;
 
-  // Relación: Muchos a Muchos con Discente (N:M)
   @ManyToMany(() => Discente, (discente) => discente.grupos, {
     onDelete: 'CASCADE',
   })

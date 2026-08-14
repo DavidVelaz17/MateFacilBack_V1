@@ -5,6 +5,7 @@ import { LogroAlumno } from './entities/logro-alumno.entity';
 import { LOGROS } from './achievements.definitions';
 import { Discente } from '../students/entities/student.entity';
 import { Intento } from '../attempts/entities/attempt.entity';
+import { diaLocal } from '../common/date.utils';
 
 @Injectable()
 export class AchievementsService {
@@ -13,8 +14,6 @@ export class AchievementsService {
     private logroRepository: Repository<LogroAlumno>,
   ) {}
 
-  // Catalogo completo (desbloqueados + bloqueados con su progreso) para
-  // mostrar en el dashboard del docente. Solo lectura.
   async getCatalogoParaAlumno(discente: Discente, intentos: Intento[]) {
     const desbloqueados = await this.logroRepository.find({
       where: { discente: { id_discente: discente.id_discente } },
@@ -38,10 +37,6 @@ export class AchievementsService {
     });
   }
 
-  // Se llama justo despues de guardar un intento nuevo (StudentsService.
-  // saveAttempt). Evalua el catalogo completo contra el historial ya
-  // actualizado y persiste los que se cumplen por primera vez. Devuelve
-  // solo los recien desbloqueados, para mostrarlos en el momento.
   async evaluarYDesbloquear(discente: Discente, intentos: Intento[]) {
     const desbloqueados = await this.logroRepository.find({
       where: { discente: { id_discente: discente.id_discente } },
@@ -69,17 +64,16 @@ export class AchievementsService {
     }));
   }
 
-  // Racha "en vivo": dias consecutivos con al menos un intento, contando
-  // hacia atras desde la fecha del intento mas reciente (no
-  // necesariamente hoy). No se guarda en ningun lado.
-  calcularRachaDias(intentos: Intento[]): number {
+  // tzOffsetMinutes: ver common/date.utils.ts — sin esto, una partida
+  // jugada de noche cuenta en el dia UTC siguiente, no en el local.
+  calcularRachaDias(intentos: Intento[], tzOffsetMinutes = 0): number {
     if (intentos.length === 0) return 0;
 
     const dias = Array.from(
-      new Set(intentos.map((i) => i.Fecha.toISOString().slice(0, 10))),
+      new Set(intentos.map((i) => diaLocal(i.Fecha, tzOffsetMinutes))),
     )
       .sort()
-      .reverse(); // mas reciente primero
+      .reverse();
 
     let racha = 1;
     for (let idx = 0; idx < dias.length - 1; idx++) {
@@ -96,8 +90,6 @@ export class AchievementsService {
     return racha;
   }
 
-  // Racha "en vivo": victorias consecutivas contando hacia atras desde el
-  // intento mas reciente por Numero_de_intento.
   calcularRachaVictorias(intentos: Intento[]): number {
     const ordenados = [...intentos].sort(
       (a, b) => b.Numero_de_intento - a.Numero_de_intento,

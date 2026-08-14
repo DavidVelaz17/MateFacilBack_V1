@@ -1,13 +1,11 @@
 import { Intento } from '../attempts/entities/attempt.entity';
 import { LogroDefinicion } from './achievements.types';
 
-// Ambos mundos tienen 5 puntos en el mapa (ver patterns.tsx en el
-// frontend: MapConfig.pointDataTierra/pointDataAgua). Duplicado aqui
-// porque backend y frontend no comparten codigo.
+// 5 puntos en el mapa, igual que MapConfig.pointDataTierra/Agua en el
+// frontend (patterns.tsx). Duplicado porque backend y frontend no
+// comparten codigo.
 const TOTAL_NIVELES_MUNDO = 5;
 
-// Cuantos sub-intentos fallaron antes del que gano la puerta (0 si gano
-// al primer intento, o si la partida no tiene desglose guardado).
 function fallosAntesDeExito(intento: Intento): number {
   const subIntentos = intento.Desglose?.intentos;
   if (!subIntentos || subIntentos.length === 0) return 0;
@@ -27,10 +25,8 @@ function ordenarPorFecha(intentos: Intento[]): Intento[] {
   return [...intentos].sort((a, b) => a.Fecha.getTime() - b.Fecha.getTime());
 }
 
-// Indice (en el arreglo ya ordenado por Numero_de_intento) de la partida
-// jugada justo despues de 3 derrotas seguidas (Puntos === 0), o null si
-// nunca paso. Sirve tanto para "Nunca te rindes" (solo que haya vuelto a
-// jugar) como para "Remontada" (que ademas la haya ganado).
+// Compartida por "Nunca te rindes" (solo que haya vuelto a jugar) y
+// "Remontada" (que ademas la haya ganado).
 function indicePartidaTrasTresDerrotas(intentosOrdenados: Intento[]): number | null {
   for (let i = 0; i + 3 < intentosOrdenados.length; i++) {
     const ventana = intentosOrdenados.slice(i, i + 3);
@@ -41,8 +37,6 @@ function indicePartidaTrasTresDerrotas(intentosOrdenados: Intento[]): number | n
   return null;
 }
 
-// Volvio a jugar (y gano) despues de un hueco de "diasMinimos" o mas sin
-// actividad, comparando la Fecha de cada intento con la del anterior.
 function huboRegresoTrasPausa(intentos: Intento[], diasMinimos: number): boolean {
   const ordenados = ordenarPorFecha(intentos);
   for (let i = 1; i < ordenados.length; i++) {
@@ -56,8 +50,6 @@ function huboRegresoTrasPausa(intentos: Intento[], diasMinimos: number): boolean
   return false;
 }
 
-// Una partida floja (Puntos < umbralBajo) seguida, en esa misma
-// Operacion, de otra con un salto de "saltoMinimo" puntos o mas.
 function huboSaltoDeMejora(
   intentos: Intento[],
   umbralBajo: number,
@@ -84,9 +76,8 @@ function huboSaltoDeMejora(
   return false;
 }
 
-// Victorias "trabajadas": gano, pero tuvo que fallar al menos una vez
-// antes de lograrlo (a diferencia de "Primera Perfecta", que premia
-// hacerlo bien a la primera).
+// A diferencia de "Primera Perfecta" (ganar a la primera), aqui se exige
+// haber fallado al menos una vez antes de ganar.
 function victoriasTrabajadas(intentos: Intento[]): number {
   return intentos.filter((i) => i.Puntos > 0 && fallosAntesDeExito(i) >= 1)
     .length;
@@ -95,9 +86,6 @@ function victoriasTrabajadas(intentos: Intento[]): number {
 const VICTORIAS_PARA_MAESTRO = 20;
 const VICTORIAS_A_PULSO = 15;
 
-// Genera el logro "Maestro de <operacion>": 20 victorias en esa operacion.
-// Un solo generador para las 4 (suma, resta, multiplicacion, division) en
-// vez de repetir el mismo bloque cuatro veces.
 function maestroDeOperacion(
   codigo: string,
   nombre: string,
@@ -182,7 +170,6 @@ export const LOGROS: LogroDefinicion[] = [
     cumplido: (ctx) => ctx.intentos.some((i) => i.Puntos > 0 && i.Tiempo <= 15),
   },
 
-  // --- Resiliencia: premian volver a intentar, no solo tener exito ---
   {
     codigo: 'nunca_te_rindes',
     nombre: 'Nunca te Rindes',

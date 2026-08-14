@@ -2,8 +2,8 @@ import { Intento } from '../attempts/entities/attempt.entity';
 import { Discente } from '../students/entities/student.entity';
 
 export interface LogroContext {
-  // Historial completo del alumno, incluyendo el intento recien guardado
-  // cuando se evalua justo despues de una partida.
+  // Incluye el intento recien guardado cuando se evalua justo despues de
+  // una partida.
   intentos: Intento[];
   discente: Discente;
 }

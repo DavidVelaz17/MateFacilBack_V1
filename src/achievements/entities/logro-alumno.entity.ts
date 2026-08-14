@@ -8,9 +8,9 @@ import {
 } from 'typeorm';
 import { Discente } from '../../students/entities/student.entity';
 
-// Un logro se escribe una sola vez, en el momento exacto en que su regla
-// se cumple por primera vez (ver AchievementsService.evaluarYDesbloquear).
-// A diferencia de las rachas, nunca se recalcula ni se puede perder.
+// Se escribe una sola vez al cumplirse la regla (ver
+// AchievementsService.evaluarYDesbloquear). A diferencia de las rachas,
+// nunca se recalcula ni se puede perder.
 @Entity('logros_alumno')
 export class LogroAlumno {
   @PrimaryGeneratedColumn()

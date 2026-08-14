@@ -4,7 +4,6 @@ import { TeachersService } from '../teachers/teachers.service';
 import { LoginDto } from './dto/login.dto';
 import * as bcrypt from 'bcrypt';
 
-// Interfaz para garantizar el tipado estricto del usuario validado
 export interface ValidatedUser {
   id_docente: number;
   Usuario: string;
@@ -20,10 +19,9 @@ export class AuthService {
     private readonly jwtService: JwtService,
   ) {}
 
-  // Se especifica el tipo de retorno estricto en lugar de any
   async validateUser(usuario: string, pass: string): Promise<ValidatedUser | null> {
-    // Intercepcion del Super Admin. Sin fallback: si ADMIN_USERNAME/ADMIN_PASSWORD
-    // no estan definidos en el entorno, este acceso simplemente no puede matchear.
+    // Sin fallback: si ADMIN_USERNAME/ADMIN_PASSWORD no estan definidos en
+    // el entorno, este acceso no puede matchear (no hay password por defecto).
     const adminUser = process.env.ADMIN_USERNAME;
     const adminPass = process.env.ADMIN_PASSWORD;
 
@@ -37,12 +35,9 @@ export class AuthService {
       };
     }
 
-    // Flujo normal de validacion de docente
     const docente = await this.teachersService.findByUsuario(usuario);
 
-    // Comparacion segura usando bcrypt
     if (docente && (await bcrypt.compare(pass, docente.Password))) {
-      // Retornamos unicamente los datos necesarios, omitiendo el Password
       return {
         id_docente: docente.id_docente,
         Usuario: docente.Usuario,
@@ -65,7 +60,6 @@ export class AuthService {
       throw new UnauthorizedException('Usuario o contraseña incorrectos');
     }
 
-    // Al estar tipado, TypeScript reconocera perfectamente estas propiedades
     const payload = {
       sub: validUser.id_docente,
       username: validUser.Usuario,

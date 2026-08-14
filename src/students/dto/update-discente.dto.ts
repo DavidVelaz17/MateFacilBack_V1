@@ -8,7 +8,7 @@ export class UpdateDiscenteDto extends PartialType(CreateDiscenteDto) {
   @IsBoolean()
   Activo?: boolean;
 
-  // Actualizados desde el juego (MapScene) al avanzar/reiniciar un mundo.
+  // Actualizado desde el juego (MapScene), no por el docente.
   @IsOptional()
   @IsInt()
   @Min(0)

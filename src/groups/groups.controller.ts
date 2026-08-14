@@ -6,6 +6,7 @@ import {
   Patch,
   Param,
   Delete,
+  Query,
   UseGuards,
   Req,
 } from '@nestjs/common';
@@ -14,6 +15,7 @@ import { CreateGroupDto } from './dto/create-group.dto';
 import { UpdateGroupDto } from './dto/update-group.dto';
 import { AuthGuard } from '@nestjs/passport';
 import { Grupo } from './entities/group.entity';
+import { ReportQueryDto } from '../students/dto/report-query.dto';
 
 @UseGuards(AuthGuard('jwt'))
 @Controller('groups')
@@ -35,10 +37,23 @@ export class GroupsController {
     return this.groupsService.findOne(+id);
   }
 
-  // Avance del grupo en el tiempo (promedios diarios + serie por alumno)
   @Get(':id/stats')
-  getStats(@Param('id') id: string) {
-    return this.groupsService.getGroupStats(+id);
+  getStats(@Param('id') id: string, @Query('tzOffset') tzOffset?: string) {
+    return this.groupsService.getGroupStats(+id, Number(tzOffset) || 0);
+  }
+
+  // El frontend manda instantes ISO precisos (hora local ya resuelta), no
+  // fechas sueltas (ver ReportQueryDto).
+  @Get(':id/report')
+  getReport(@Param('id') id: string, @Query() query: ReportQueryDto) {
+    const desde = new Date(query.desde);
+    const hasta = new Date(query.hasta);
+    return this.groupsService.getGroupReport(
+      +id,
+      desde,
+      hasta,
+      query.tzOffset ?? 0,
+    );
   }
 
   @Patch(':id')
