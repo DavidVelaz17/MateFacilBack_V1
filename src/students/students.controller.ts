@@ -29,8 +29,8 @@ export class StudentsController {
   }
 
   @Get()
-  findAll() {
-    return this.studentsService.findAll();
+  findAll(@Query('tzOffset') tzOffset?: string) {
+    return this.studentsService.findAll(Number(tzOffset) || 0);
   }
 
   @Patch(':id')

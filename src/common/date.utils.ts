@@ -9,3 +9,11 @@ export function diaLocal(fecha: Date, tzOffsetMinutes = 0): string {
     .toISOString()
     .slice(0, 10);
 }
+
+// Diferencia en dias calendario entre dos strings "YYYY-MM-DD" (ya locales,
+// ver diaLocal). diaA - diaB.
+export function diffDiasCalendario(diaA: string, diaB: string): number {
+  return Math.round(
+    (new Date(diaA).getTime() - new Date(diaB).getTime()) / 86400000,
+  );
+}

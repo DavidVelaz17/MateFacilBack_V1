@@ -23,10 +23,11 @@ export class StudentsService {
     return this.studentRepository.save(newStudent);
   }
 
-  async findAll() {
+  async findAll(tzOffsetMinutes = 0) {
     const students = await this.studentRepository.find({
       relations: {
         grupos: true,
+        intentos: true,
       },
     });
 
@@ -42,10 +43,20 @@ export class StudentsService {
       starsRaw.map((row) => [Number(row.id_discente), Number(row.totalStars)]),
     );
 
-    return students.map((student) => ({
-      ...student,
-      totalStars: starsByStudent.get(student.id_discente) ?? 0,
-    }));
+    return students.map((student) => {
+      const { intentos, ...studentFields } = student;
+      const { dias: rachaDias, estado: rachaEstado } =
+        this.achievementsService.calcularEstadoRacha(
+          intentos,
+          tzOffsetMinutes,
+        );
+      return {
+        ...studentFields,
+        totalStars: starsByStudent.get(student.id_discente) ?? 0,
+        rachaDias,
+        rachaEstado,
+      };
+    });
   }
 
   findOne(id_discente: number) {
@@ -148,10 +159,11 @@ export class StudentsService {
       student,
       intentosActualizados,
     );
-    const rachaDias = this.achievementsService.calcularRachaDias(
-      intentosActualizados,
-      TzOffset,
-    );
+    const { dias: rachaDias, estado: rachaEstado } =
+      this.achievementsService.calcularEstadoRacha(
+        intentosActualizados,
+        TzOffset,
+      );
     const rachaVictorias = this.achievementsService.calcularRachaVictorias(
       intentosActualizados,
     );
@@ -160,6 +172,7 @@ export class StudentsService {
       ...savedAttempt,
       logrosNuevos,
       rachaDias,
+      rachaEstado,
       rachaVictorias,
     };
   }
@@ -188,7 +201,7 @@ export class StudentsService {
         recentSessions: [],
         nivelMapaTierra: student.NivelMapaTierra,
         nivelMapaAgua: student.NivelMapaAgua,
-        streaks: { dias: 0, victorias: 0 },
+        streaks: { dias: 0, estado: 'rota', victorias: 0 },
         logros: await this.achievementsService.getCatalogoParaAlumno(
           student,
           [],
@@ -241,7 +254,7 @@ export class StudentsService {
       nivelMapaTierra: student.NivelMapaTierra,
       nivelMapaAgua: student.NivelMapaAgua,
       streaks: {
-        dias: this.achievementsService.calcularRachaDias(
+        ...this.achievementsService.calcularEstadoRacha(
           intentos,
           tzOffsetMinutes,
         ),
@@ -356,7 +369,7 @@ export class StudentsService {
       resumenPeriodo,
       estadoActual: {
         streaks: {
-          dias: this.achievementsService.calcularRachaDias(
+          ...this.achievementsService.calcularEstadoRacha(
             todosLosIntentos,
             tzOffsetMinutes,
           ),

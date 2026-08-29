@@ -5,7 +5,9 @@ import { LogroAlumno } from './entities/logro-alumno.entity';
 import { LOGROS } from './achievements.definitions';
 import { Discente } from '../students/entities/student.entity';
 import { Intento } from '../attempts/entities/attempt.entity';
-import { diaLocal } from '../common/date.utils';
+import { diaLocal, diffDiasCalendario } from '../common/date.utils';
+
+export type EstadoRacha = 'activa' | 'congelada' | 'rota';
 
 @Injectable()
 export class AchievementsService {
@@ -88,6 +90,35 @@ export class AchievementsService {
       }
     }
     return racha;
+  }
+
+  // Compara el ultimo dia jugado contra "hoy" (local, via tzOffsetMinutes)
+  // para saber si la racha sigue activa, se congelo (se salto 1 dia) o se
+  // rompio (2+ dias sin jugar). calcularRachaDias no lo hace: solo compara
+  // dias jugados entre si, nunca contra la fecha actual.
+  calcularEstadoRacha(
+    intentos: Intento[],
+    tzOffsetMinutes = 0,
+  ): { dias: number; estado: EstadoRacha } {
+    if (intentos.length === 0) return { dias: 0, estado: 'rota' };
+
+    const ultimoDia = Array.from(
+      new Set(intentos.map((i) => diaLocal(i.Fecha, tzOffsetMinutes))),
+    )
+      .sort()
+      .reverse()[0];
+
+    const diasSinJugar = diffDiasCalendario(
+      diaLocal(new Date(), tzOffsetMinutes),
+      ultimoDia,
+    );
+
+    if (diasSinJugar >= 3) return { dias: 0, estado: 'rota' };
+
+    return {
+      dias: this.calcularRachaDias(intentos, tzOffsetMinutes),
+      estado: diasSinJugar <= 1 ? 'activa' : 'congelada',
+    };
   }
 
   calcularRachaVictorias(intentos: Intento[]): number {

@@ -25,13 +25,16 @@ function ordenarPorFecha(intentos: Intento[]): Intento[] {
   return [...intentos].sort((a, b) => a.Fecha.getTime() - b.Fecha.getTime());
 }
 
-// Compartida por "Nunca te rindes" (solo que haya vuelto a jugar) y
-// "Remontada" (que ademas la haya ganado).
-function indicePartidaTrasTresDerrotas(intentosOrdenados: Intento[]): number | null {
-  for (let i = 0; i + 3 < intentosOrdenados.length; i++) {
-    const ventana = intentosOrdenados.slice(i, i + 3);
+// Compartida por "Nunca te rindes" (solo que haya vuelto a jugar, con n=5) y
+// "Remontada" (que ademas la haya ganado, con n=3).
+function indicePartidaTrasNDerrotas(
+  intentosOrdenados: Intento[],
+  n: number,
+): number | null {
+  for (let i = 0; i + n < intentosOrdenados.length; i++) {
+    const ventana = intentosOrdenados.slice(i, i + n);
     if (ventana.every((x) => x.Puntos === 0)) {
-      return i + 3;
+      return i + n;
     }
   }
   return null;
@@ -173,10 +176,10 @@ export const LOGROS: LogroDefinicion[] = [
   {
     codigo: 'nunca_te_rindes',
     nombre: 'Nunca te Rindes',
-    descripcion: 'Jugó de nuevo después de perder 3 partidas seguidas',
+    descripcion: 'Jugó de nuevo después de perder 5 partidas seguidas',
     icono: '💪',
     cumplido: (ctx) =>
-      indicePartidaTrasTresDerrotas(ordenarPorIntento(ctx.intentos)) !== null,
+      indicePartidaTrasNDerrotas(ordenarPorIntento(ctx.intentos), 5) !== null,
   },
   {
     codigo: 'remontada',
@@ -185,7 +188,7 @@ export const LOGROS: LogroDefinicion[] = [
     icono: '📈',
     cumplido: (ctx) => {
       const ordenados = ordenarPorIntento(ctx.intentos);
-      const idx = indicePartidaTrasTresDerrotas(ordenados);
+      const idx = indicePartidaTrasNDerrotas(ordenados, 3);
       return idx !== null && ordenados[idx].Puntos > 0;
     },
   },

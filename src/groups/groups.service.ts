@@ -171,6 +171,12 @@ export class GroupService {
       const jugoEnPeriodo = intentosPeriodo.length > 0;
       if (jugoEnPeriodo) alumnosActivos += 1;
 
+      const { dias: rachaDias, estado: rachaEstado } =
+        this.achievementsService.calcularEstadoRacha(
+          discente.intentos,
+          tzOffsetMinutes,
+        );
+
       intentosPeriodo.forEach((intento) => {
         const dayKey = diaLocal(intento.Fecha, tzOffsetMinutes);
         const bucket = dailyBuckets.get(dayKey) ?? {
@@ -200,10 +206,8 @@ export class GroupService {
               )
             : null,
         jugoEnPeriodo,
-        rachaDias: this.achievementsService.calcularRachaDias(
-          discente.intentos,
-          tzOffsetMinutes,
-        ),
+        rachaDias,
+        rachaEstado,
         rachaVictorias: this.achievementsService.calcularRachaVictorias(
           discente.intentos,
         ),
