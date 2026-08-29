@@ -9,10 +9,8 @@ import { AttemptsModule } from './attempts/attempts.module';
 
 @Module({
   imports: [
-    // 1. Cargar variables del .env
     ConfigModule.forRoot({ isGlobal: true }),
 
-    // 2. Configurar la conexión a PostgreSQL
     TypeOrmModule.forRoot({
       type: 'postgres',
       host: process.env.DB_HOST,

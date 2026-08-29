@@ -13,7 +13,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
   }
 
-  // Si el token es valido, este metodo inyecta los datos en req.user
+  // Passport inyecta lo que este metodo retorna en req.user.
   async validate(payload: any) {
     return {
       id: payload.sub,

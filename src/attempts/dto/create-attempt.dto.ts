@@ -10,8 +10,7 @@ import {
   ValidateNested,
 } from 'class-validator';
 
-// Un evento por cada numero que el alumno recogio durante la partida
-// (correcto o trampa), en el orden en que lo recogio.
+// Un evento por cada numero recogido durante la partida (correcto o trampa).
 class DesgloseEventoDto {
   @IsInt()
   @Min(1)
@@ -32,8 +31,7 @@ class DesgloseEventoDto {
 }
 
 // Un sub-intento por cada vez que el alumno intento abrir la puerta: una
-// vida perdida genera un sub-intento fallido y reinicia el mismo problema;
-// el ultimo sub-intento puede ser exitoso o, si se quedo sin vidas, fallido.
+// vida perdida genera un sub-intento fallido y reinicia el mismo problema.
 class DesgloseIntentoDto {
   @IsInt()
   @Min(1)
@@ -53,9 +51,7 @@ class DesgloseIntentoDto {
   eventos: DesgloseEventoDto[];
 }
 
-// Desglose completo de la partida: la ecuacion objetivo y todos los
-// sub-intentos (uno por vida perdida, mas el final). Opcional para no
-// romper clientes viejos que aun no lo envian.
+// Opcional para no romper clientes viejos que aun no lo envian.
 class DesgloseDto {
   @IsArray()
   @IsInt({ each: true })
@@ -74,9 +70,8 @@ class DesgloseDto {
   intentos: DesgloseIntentoDto[];
 }
 
-// Rangos tomados de la formula real del frontend (GameScene.tsx:
-// handleDoorCollision/triggerLoss). No es anti-cheat, solo evita que
-// datos fuera de rango rompan el dashboard de estadisticas.
+// Rangos tomados de la formula real del frontend (GameScene.tsx). No es
+// anti-cheat, solo evita que datos fuera de rango rompan el dashboard.
 export class CreateAttemptDto {
   @IsInt()
   @Min(0)
@@ -116,4 +111,10 @@ export class CreateAttemptDto {
   @ValidateNested()
   @Type(() => DesgloseDto)
   Desglose?: DesgloseDto;
+
+  // Date.getTimezoneOffset() del navegador: para la racha de dias en el
+  // dia calendario local, no UTC. Sin esto se asume UTC.
+  @IsOptional()
+  @IsInt()
+  TzOffset?: number;
 }

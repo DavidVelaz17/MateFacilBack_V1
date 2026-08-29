@@ -23,22 +23,20 @@ export class Discente {
   @Column({ name: 'Apellido_Materno_Discente', length: 255 })
   Apellido_Materno_Discente: string;
 
-  // Baja logica: un alumno inactivo se oculta de las vistas de los docentes
-  // sin perder su historial de intentos.
+  // Baja logica: oculta al alumno de las vistas del docente sin perder su
+  // historial de intentos.
   @Column({ name: 'Activo', default: true })
   Activo: boolean;
 
-  // Progreso del modo historia en cada mundo del mapa (indice de punto
-  // alcanzado, 0 = inicio). Se actualiza desde MapScene via
-  // PATCH /discentes/:id para que el mapa retome donde el alumno se quedo,
-  // en vez de reiniciar siempre en el primer nivel.
+  // Indice de punto alcanzado en el mapa (0 = inicio). Actualizado desde
+  // MapScene via PATCH /discentes/:id para retomar donde se quedo, en vez
+  // de reiniciar siempre en el primer nivel.
   @Column({ name: 'NivelMapaTierra', type: 'int', default: 0 })
   NivelMapaTierra: number;
 
   @Column({ name: 'NivelMapaAgua', type: 'int', default: 0 })
   NivelMapaAgua: number;
 
-  // Relación: Muchos a Muchos con Grupo (Tabla intermedia Discente_Grupo)
   @ManyToMany(() => Grupo, (grupo) => grupo.discentes, {
     onDelete: 'CASCADE',
   })
@@ -55,7 +53,6 @@ export class Discente {
   })
   grupos: Grupo[];
 
-  //Relación: Un Discente tiene muchos Intentos (1:N)
   @OneToMany(() => Intento, (intento) => intento.discente)
   intentos: Intento[];
 }

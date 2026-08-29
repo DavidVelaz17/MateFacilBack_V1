@@ -3,9 +3,10 @@ import { GroupService } from './groups.service';
 import { GroupsController } from './groups.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Grupo } from './entities/group.entity';
+import { AchievementsModule } from '../achievements/achievements.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Grupo])],
+  imports: [TypeOrmModule.forFeature([Grupo]), AchievementsModule],
   controllers: [GroupsController],
   providers: [GroupService],
 })

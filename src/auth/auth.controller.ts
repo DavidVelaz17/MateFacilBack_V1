@@ -12,7 +12,6 @@ export class AuthController {
     return this.authService.login(loginDto);
   }
 
-  // Ruta protegida que requiere JWT valido
   @Get('profile')
   @UseGuards(AuthGuard('jwt'))
   getProfile(@Req() req: any) {

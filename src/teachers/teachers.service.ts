@@ -36,8 +36,8 @@ export class TeachersService {
   }
 
   async findByUsuario(usuario: string): Promise<Docente | null> {
-    // Password tiene select:false por defecto (ver entidad); aqui si lo
-    // necesitamos para poder compararlo con bcrypt durante el login.
+    // Password tiene select:false por defecto (ver entidad); se re-agrega
+    // aqui porque el login necesita compararlo con bcrypt.
     return this.teacherRepository
       .createQueryBuilder('docente')
       .addSelect('docente.Password')
@@ -55,14 +55,13 @@ export class TeachersService {
       const salt = await bcrypt.genSalt();
       updateTeacherDto.Password = await bcrypt.hash(updateTeacherDto.Password, salt);
     } else {
-      // Evitar sobreescribir la contrasena con nulo si no se envio en la actualizacion
+      // Sin esto, un update sin Password sobreescribiria el hash con nulo.
       delete updateTeacherDto.Password;
     }
     await this.teacherRepository.update(id_docente, updateTeacherDto);
     return this.findOne(id_docente);
   }
 
-  // Resumen de lo que se perderia al eliminar al docente, para confirmar en el dashboard
   async getDeleteImpact(id_docente: number) {
     const groups = await this.groupRepository.find({
       where: { docente: { id_docente } },
