@@ -50,6 +50,9 @@ export class Intento {
     objetivo: number[];
     trampas: number[];
     resultado: number;
+    // Ausentes en intentos anteriores a la dificultad facil por resultado.
+    modo?: 'operandos' | 'resultado';
+    operandos?: number[];
     intentos: {
       numero: number;
       exitoso: boolean;

@@ -64,6 +64,17 @@ class DesgloseDto {
   @IsInt()
   resultado: number;
 
+  // Opcionales para no romper clientes viejos. 'resultado' (dificultad
+  // facil): el alumno recoge el resultado y objetivo = [resultado].
+  @IsOptional()
+  @IsIn(['operandos', 'resultado'])
+  modo?: 'operandos' | 'resultado';
+
+  @IsOptional()
+  @IsArray()
+  @IsInt({ each: true })
+  operandos?: number[];
+
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => DesgloseIntentoDto)
